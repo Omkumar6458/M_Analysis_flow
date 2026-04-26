@@ -1,0 +1,490 @@
+/*
+package com.magicalid.abis.servlets;
+
+import com.magicalid.abis.models.Applicant;
+import com.magicalid.abis.models.BiometricData;
+import com.magicalid.abis.services.EnrollmentService;
+import com.magicalid.abis.utils.UUIDGenerator;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
+
+/**
+ * Handles Enrollment tab.
+ * GET  /app/enrollment  → renders main.jsp with enrollment tab, generates applicant ID
+ * POST /app/enrollment  → processes enrollment form → PRG redirect
+ 
+
+@MultipartConfig
+public class EnrollmentServlet extends HttpServlet {
+
+    private final EnrollmentService enrollmentService = new EnrollmentService();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+
+        // Generate a new applicant ID if not already in session
+        String applicantId = (String) session.getAttribute("applicantId");
+        if (applicantId == null || applicantId.isEmpty()) {
+            applicantId = UUIDGenerator.generate();
+            session.setAttribute("applicantId", applicantId);
+        }
+
+        request.setAttribute("activeTab", "enrollment");
+        request.setAttribute("applicantId", applicantId);
+        request.setAttribute("group", session.getAttribute("group"));
+
+        // Pass any flash messages from POST redirect
+        String successMsg = (String) session.getAttribute("enrollmentSuccess");
+        String errorMsg = (String) session.getAttribute("enrollmentError");
+        if (successMsg != null) {
+            request.setAttribute("successMessage", successMsg);
+            session.removeAttribute("enrollmentSuccess");
+        }
+        if (errorMsg != null) {
+            request.setAttribute("errorMessage", errorMsg);
+            session.removeAttribute("enrollmentError");
+        }
+
+        request.getRequestDispatcher("/WEB-INF/jsp/main.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+
+        // Build Applicant model from form parameters
+        Applicant applicant = new Applicant();
+        applicant.setRequestType(request.getParameter("requestType"));
+        applicant.setGroup((String) session.getAttribute("group"));
+        applicant.setApplicantId(request.getParameter("applicantId"));
+        applicant.setFirstName(request.getParameter("firstName"));
+        applicant.setMiddleName(request.getParameter("middleName"));
+        applicant.setLastName(request.getParameter("lastName"));
+        applicant.setGivenNames(request.getParameter("givenNames"));
+        applicant.setNickName(request.getParameter("nickName"));
+        applicant.setSpouseName(request.getParameter("spouseName"));
+        applicant.setDateOfBirth(request.getParameter("dateOfBirth"));
+        applicant.setPlaceOfBirth(request.getParameter("placeOfBirth"));
+        applicant.setGender(request.getParameter("gender"));
+        applicant.setMobileNumber(request.getParameter("mobileNumber"));
+        applicant.setMaritalStatus(request.getParameter("maritalStatus"));
+        applicant.setTelephoneNo(request.getParameter("telephoneNo"));
+        applicant.setMotherName(request.getParameter("motherName"));
+        applicant.setFatherName(request.getParameter("fatherName"));
+        applicant.setCity(request.getParameter("city"));
+        applicant.setState(request.getParameter("state"));
+        applicant.setCountry(request.getParameter("country"));
+        applicant.setAddress(request.getParameter("address"));
+        applicant.setSameAsCurrentAddress("on".equals(request.getParameter("sameAsCurrentAddress")));
+        applicant.setPermanentCity(request.getParameter("permanentCity"));
+        applicant.setPermanentState(request.getParameter("permanentState"));
+        applicant.setPermanentCountry(request.getParameter("permanentCountry"));
+        applicant.setPermanentAddress(request.getParameter("permanentAddress"));
+        applicant.setHeight(request.getParameter("height"));
+        applicant.setWeight(request.getParameter("weight"));
+        applicant.setEyesColor(request.getParameter("eyesColor"));
+        applicant.setHairColor(request.getParameter("hairColor"));
+        applicant.setVoice(request.getParameter("voice"));
+        applicant.setFaceFeatures(request.getParameter("faceFeatures"));
+        applicant.setFaceMarks(request.getParameter("faceMarks"));
+        applicant.setTorsoMarks(request.getParameter("torsoMarks"));
+        applicant.setLimbsMarks(request.getParameter("limbsMarks"));
+        applicant.setOtherNotes(request.getParameter("otherNotes"));
+
+        // Biometric data is handled client-side via JS and sent as JSON
+        // In a full implementation, we'd parse multipart form data here
+        BiometricData biometrics = new BiometricData();
+
+        // Validate
+        String validationError = enrollmentService.validateEnrollment(applicant, biometrics);
+        if (validationError != null) {
+            session.setAttribute("enrollmentError", validationError);
+        } else {
+            String result = enrollmentService.processEnrollment(applicant, biometrics);
+            session.setAttribute("enrollmentSuccess", result);
+            // Generate new applicant ID for next enrollment
+            session.setAttribute("applicantId", UUIDGenerator.generate());
+        }
+
+        // PRG: redirect back to enrollment page
+        response.sendRedirect(request.getContextPath() + "/app/enrollment");
+    }
+}
+
+*/
+
+package com.magicalid.abis.servlets;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.magicalid.abis.models.Applicant;
+import com.magicalid.abis.models.BiometricData;
+import com.magicalid.abis.services.EnrollmentService;
+import com.magicalid.abis.utils.UUIDGenerator;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.Part;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
+
+/**
+ * Handles Enrollment tab.
+ *
+ * GET  /app/enrollment → renders main.jsp (serves the page)
+ * POST /app/enrollment → receives FormData from JS fetch(), returns JSON response
+ *
+ * What the browser sends (multipart/form-data):
+ *   Part "json"          → text string: the full JSON payload (demographic + metadata)
+ *   Part "faceFront"     → image file (PNG/JPG/BMP)
+ *   Part "faceLeft"      → image file
+ *   Part "faceRight"     → image file
+ *   Part "irisLeft"      → image file
+ *   Part "irisRight"     → image file
+ *   Part "fp_left_thumb" → image file
+ *   Part "fp_left_index" → image file
+ *   ... (only parts that were actually uploaded)
+ *
+ * What this servlet sends back (application/json):
+ *   {"status":"success","message":"..."}   on success
+ *   {"status":"error","message":"..."}     on failure
+ */
+@MultipartConfig(
+    maxFileSize    = 2 * 1024 * 1024,   // 2 MB max per single file
+    maxRequestSize = 30 * 1024 * 1024   // 30 MB max for entire request
+)
+public class EnrollmentServlet extends HttpServlet {
+
+    private final EnrollmentService enrollmentService = new EnrollmentService();
+    private final ObjectMapper objectMapper = new ObjectMapper();   // Jackson JSON parser
+
+    // =========================================================================
+    // GET — just render the page
+    // =========================================================================
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+
+        // Generate applicant ID if not already in session
+        String applicantId = (String) session.getAttribute("applicantId");
+        if (applicantId == null || applicantId.isEmpty()) {
+            applicantId = UUIDGenerator.generate();
+            session.setAttribute("applicantId", applicantId);
+        }
+
+        request.setAttribute("activeTab",   "enrollment");
+        request.setAttribute("applicantId", applicantId);
+        request.setAttribute("group",       session.getAttribute("group"));
+
+        request.getRequestDispatcher("/WEB-INF/jsp/main.jsp").forward(request, response);
+    }
+
+    // =========================================================================
+    // POST — receive FormData from JS fetch(), process, return JSON
+    // =========================================================================
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        // Always respond with JSON (JS does .then(res => res.json()))
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            HttpSession session = request.getSession();
+
+            // =================================================================
+            // STEP 1: Read the "json" part
+            // The browser sends one text part called "json" which contains the
+            // entire JSON string: { demographic: {...}, biometrics: {...}, ... }
+            // =================================================================
+            String jsonStr = request.getParameter("json");
+            // Note: getParameter() works for text parts in multipart requests (Tomcat handles this)
+
+            if (jsonStr == null || jsonStr.isBlank()) {
+                sendError(response, "Missing JSON payload");
+                return;
+            }
+
+            // =================================================================
+            // STEP 2: Parse the JSON string into a JsonNode tree
+            // Then extract the "demographic" sub-object
+            // =================================================================
+            JsonNode root = objectMapper.readTree(jsonStr);
+            //
+            // root looks like:
+            // {
+            //   "operation": "enrollment",
+            //   "group": "default",
+            //   "demographic": {
+            //     "applicantId": "uuid...",
+            //     "firstName": "John",
+            //     "lastName": "Doe",
+            //     ...
+            //   },
+            //   "biometrics": { ... metadata only, actual files come as Parts }
+            // }
+            //
+            JsonNode demo = root.path("demographic");
+
+            // =================================================================
+            // STEP 3: Build Applicant object from the "demographic" JSON node
+            // Each field is extracted with demo.path("fieldName").asText()
+            // =================================================================
+            Applicant applicant = new Applicant();
+
+            // Group comes from session (set at login), not from client JSON
+            applicant.setGroup((String) session.getAttribute("group"));
+
+            // All these come from the "demographic" block in the JSON
+            applicant.setRequestType(  textOf(demo, "requestType"));
+            applicant.setApplicantId(  textOf(demo, "applicantId"));
+            applicant.setFirstName(    textOf(demo, "firstName"));
+            applicant.setMiddleName(   textOf(demo, "middleName"));
+            applicant.setLastName(     textOf(demo, "lastName"));
+            applicant.setGivenNames(   textOf(demo, "givenNames"));
+            applicant.setNickName(     textOf(demo, "nickName"));
+            applicant.setSpouseName(   textOf(demo, "spouseName"));
+            applicant.setDateOfBirth(  textOf(demo, "dateOfBirth"));
+            applicant.setPlaceOfBirth( textOf(demo, "placeOfBirth"));
+            applicant.setGender(       textOf(demo, "gender"));
+            applicant.setMobileNumber( textOf(demo, "mobileNumber"));
+            applicant.setMaritalStatus(textOf(demo, "maritalStatus"));
+            applicant.setTelephoneNo(  textOf(demo, "telephoneNo"));
+            applicant.setMotherName(   textOf(demo, "motherName"));
+            applicant.setFatherName(   textOf(demo, "fatherName"));
+            applicant.setCity(         textOf(demo, "city"));
+            applicant.setState(        textOf(demo, "state"));
+            applicant.setCountry(      textOf(demo, "country"));
+            applicant.setAddress(      textOf(demo, "address"));
+            applicant.setPermanentCity(    textOf(demo, "permanentCity"));
+            applicant.setPermanentState(   textOf(demo, "permanentState"));
+            applicant.setPermanentCountry( textOf(demo, "permanentCountry"));
+            applicant.setPermanentAddress( textOf(demo, "permanentAddress"));
+            applicant.setHeight(      textOf(demo, "height"));
+            applicant.setWeight(      textOf(demo, "weight"));
+            applicant.setEyesColor(   textOf(demo, "eyesColor"));
+            applicant.setHairColor(   textOf(demo, "hairColor"));
+            applicant.setVoice(       textOf(demo, "voice"));
+            applicant.setFaceFeatures(textOf(demo, "faceFeatures"));
+            applicant.setFaceMarks(   textOf(demo, "faceMarks"));
+            applicant.setTorsoMarks(  textOf(demo, "torsoMarks"));
+            applicant.setLimbsMarks(  textOf(demo, "limbsMarks"));
+            applicant.setOtherNotes(  textOf(demo, "otherNotes"));
+
+            // =================================================================
+            // STEP 4: Read image file Parts and build BiometricData
+            // Each Part is an uploaded image file from the browser.
+            // We convert the raw bytes to Base64 so they can be stored or
+            // forwarded to the Master API as a JSON string.
+            // =================================================================
+            BiometricData biometrics = new BiometricData();
+
+            // ── Face images ──────────────────────────────────────────────────
+            // JS sends:  formData.append("faceFront", state.face.front.file)
+            biometrics.setFaceFront( readFilePart(request, "faceFront"));
+            biometrics.setFaceLeft(  readFilePart(request, "faceLeft"));
+            biometrics.setFaceRight( readFilePart(request, "faceRight"));
+
+            // ── Iris images ──────────────────────────────────────────────────
+            // JS sends:  formData.append("irisLeft", state.iris.left.file)
+            biometrics.setLeftIris(  readFilePart(request, "irisLeft"));
+            biometrics.setRightIris( readFilePart(request, "irisRight"));
+
+            // ── Fingerprint images ───────────────────────────────────────────
+            // JS sends:  formData.append("fp_left_thumb", state.fingerprints.left.thumb.file)
+            String[] fingers = {"thumb", "index", "middle", "ring", "little"};
+            for (String finger : fingers) {
+                biometrics.getLeftFingerprints().put(finger,
+                    readFilePart(request, "fp_left_" + finger));
+                biometrics.getRightFingerprints().put(finger,
+                    readFilePart(request, "fp_right_" + finger));
+            }
+
+            // =================================================================
+            // STEP 5: Validate
+            // EnrollmentService checks: applicantId not empty, at least 1 biometric
+            // =================================================================
+            String validationError = enrollmentService.validateEnrollment(applicant, biometrics);
+            if (validationError != null) {
+                sendError(response, validationError);
+                return;
+            }
+
+            // =================================================================
+            // STEP 6: Process — currently logs/stores locally
+            // In future: EnrollmentService will call Master API here
+            // =================================================================
+            String result = enrollmentService.processEnrollment(applicant, biometrics);
+
+            // Give browser a fresh applicant ID for the next enrollment
+            session.setAttribute("applicantId", UUIDGenerator.generate());
+
+            // =================================================================
+            // STEP 7: Send JSON success response back to browser
+            // JS reads this with .then(res => res.json())
+            // =================================================================
+            //
+            // Browser receives: {"status":"success","message":"Enrollment submitted..."}
+            // JS then does:     showToast(data.message)
+            //
+            response.getWriter().write(
+                "{\"status\":\"success\",\"message\":" +
+                objectMapper.writeValueAsString(result) +
+                "}"
+            );
+
+        } catch (Exception e) {
+            getServletContext().log("Enrollment POST error", e);
+            sendError(response, "Server error: " + e.getMessage());
+        }
+    }
+
+    // =========================================================================
+    // HELPER: Read one file Part → convert bytes → CaptureSlot (Base64)
+    //
+    // Why Base64? Because Base64 turns binary image bytes into a plain text
+    // string that can be stored in JSON or sent to a REST API.
+    // =========================================================================
+    private BiometricData.CaptureSlot readFilePart(HttpServletRequest request, String partName)
+            throws IOException, ServletException {
+
+        Part part = request.getPart(partName);
+
+        // Part is absent or empty → return empty CaptureSlot (that's fine, not all slots required)
+        if (part == null || part.getSize() == 0) {
+            return new BiometricData.CaptureSlot();
+        }
+
+        // Read raw bytes from the uploaded file
+        byte[] bytes;
+        try (InputStream in = part.getInputStream()) {
+            bytes = in.readAllBytes();
+        }
+
+        // Get original filename from Content-Disposition header
+        String filename = extractFilename(part);
+
+        // Get extension (PNG, JPG, BMP)
+        String ext = filename.contains(".")
+            ? filename.substring(filename.lastIndexOf('.') + 1).toUpperCase()
+            : "BIN";
+
+        // Human-readable file size
+        String size = String.format("%.2fMB", bytes.length / (1024.0 * 1024.0));
+
+        // Convert raw bytes → Base64 string
+        // e.g.  [0x89,0x50,0x4E,0x47...] → "iVBORw0KGgoAAAANSUhEUgAA..."
+        String base64 = Base64.getEncoder().encodeToString(bytes);
+
+        return new BiometricData.CaptureSlot(base64, filename, size, ext);
+    }
+
+    // =========================================================================
+    // HELPER: Extract filename from Part's Content-Disposition header
+    // Header looks like: form-data; name="faceFront"; filename="photo.png"
+    // =========================================================================
+    private String extractFilename(Part part) {
+        String cd = part.getHeader("content-disposition");
+        if (cd == null) return part.getName();
+        for (String token : cd.split(";")) {
+            token = token.trim();
+            if (token.startsWith("filename")) {
+                return token.substring(token.indexOf('=') + 1).trim().replace("\"", "");
+            }
+        }
+        return part.getName();
+    }
+
+    // =========================================================================
+    // HELPER: Null-safe text extraction from a JsonNode
+    // Returns null if field is missing or JSON null
+    // =========================================================================
+    private String textOf(JsonNode node, String field) {
+        JsonNode n = node.get(field);
+        if (n == null || n.isNull()) return null;
+        String val = n.asText().trim();
+        return val.isEmpty() ? null : val;
+    }
+
+    // =========================================================================
+    // HELPER: Write a JSON error response
+    // Sets HTTP 400 status so JS .catch() or status checks can detect it
+    // =========================================================================
+    private void sendError(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        try {
+            response.getWriter().write(
+                "{\"status\":\"error\",\"message\":" +
+                objectMapper.writeValueAsString(message) +
+                "}"
+            );
+        } catch (Exception e) {
+            response.getWriter().write("{\"status\":\"error\",\"message\":\"Unknown error\"}");
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
