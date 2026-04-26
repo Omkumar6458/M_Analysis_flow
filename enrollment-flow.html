@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Enrollment Flow — Complete Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', monospace;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 32px 20px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    color: #60a5fa;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    margin-bottom: 40px;
+  }
+
+  /* ── STEP CARDS ── */
+  .steps { display: flex; flex-direction: column; gap: 0; max-width: 860px; margin: 0 auto; }
+
+  .step {
+    display: flex;
+    gap: 0;
+    position: relative;
+  }
+
+  /* vertical line connector */
+  .step:not(:last-child) .line-col::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 52px;
+    bottom: -20px;
+    width: 2px;
+    background: linear-gradient(to bottom, #3b82f6, #1e293b);
+    transform: translateX(-50%);
+  }
+
+  .line-col {
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .step-num {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 16px;
+    z-index: 1;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .step-body {
+    flex: 1;
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    margin-left: 12px;
+  }
+
+  .step-body:hover { border-color: #3b82f6; transition: border-color 0.2s; }
+
+  .step-title {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .step-desc {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+
+  /* color themes per step */
+  .s1 .step-num { background: #1e3a5f; color: #60a5fa; border: 2px solid #3b82f6; }
+  .s1 .step-title { color: #60a5fa; }
+  .s2 .step-num { background: #1a3a2a; color: #4ade80; border: 2px solid #22c55e; }
+  .s2 .step-title { color: #4ade80; }
+  .s3 .step-num { background: #3a2a1a; color: #fb923c; border: 2px solid #f97316; }
+  .s3 .step-title { color: #fb923c; }
+  .s4 .step-num { background: #2a1a3a; color: #c084fc; border: 2px solid #a855f7; }
+  .s4 .step-title { color: #c084fc; }
+  .s5 .step-num { background: #1a3a3a; color: #22d3ee; border: 2px solid #06b6d4; }
+  .s5 .step-title { color: #22d3ee; }
+  .s6 .step-num { background: #3a1a2a; color: #f472b6; border: 2px solid #ec4899; }
+  .s6 .step-title { color: #f472b6; }
+
+  /* code blocks */
+  pre {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 12px;
+    overflow-x: auto;
+    line-height: 1.7;
+    margin-top: 10px;
+  }
+
+  .k  { color: #ff7b72; }   /* keyword */
+  .s  { color: #a5d6ff; }   /* string */
+  .c  { color: #8b949e; }   /* comment */
+  .f  { color: #d2a8ff; }   /* function */
+  .v  { color: #ffa657; }   /* variable */
+  .n  { color: #79c0ff; }   /* number/key */
+  .ok { color: #3fb950; }   /* green */
+  .w  { color: #e3b341; }   /* warning/yellow */
+
+  /* label badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-right: 4px;
+  }
+  .badge-js   { background: #422006; color: #fb923c; }
+  .badge-java { background: #1e1a3a; color: #c084fc; }
+  .badge-json { background: #0c2a1a; color: #4ade80; }
+  .badge-api  { background: #0c1a2a; color: #60a5fa; }
+
+  /* data flow boxes */
+  .flow-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .flow-box {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    flex: 1;
+    min-width: 160px;
+  }
+  .flow-box-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    color: #64748b;
+  }
+  .flow-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+    border-bottom: 1px solid #0f172a;
+    font-size: 11px;
+  }
+  .flow-item:last-child { border-bottom: none; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-blue   { background: #3b82f6; }
+  .dot-green  { background: #22c55e; }
+  .dot-orange { background: #f97316; }
+  .dot-purple { background: #a855f7; }
+
+  /* arrow */
+  .arrow {
+    text-align: center;
+    font-size: 20px;
+    color: #334155;
+    margin: -8px 0 -4px 0;
+    padding-left: 60px;
+  }
+
+  .tag { color: #7dd3fc; }
+  .attr { color: #fbbf24; }
+  .val { color: #86efac; }
+
+  hr { border: none; border-top: 1px solid #1e293b; margin: 20px 0; }
+
+  .tip {
+    background: #0f2a1a;
+    border-left: 3px solid #22c55e;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #86efac;
+    margin-top: 10px;
+  }
+  .warn {
+    background: #2a1a0a;
+    border-left: 3px solid #f97316;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #fdba74;
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Enrollment — Complete Data Flow</h1>
+<p class="subtitle">From user clicking Submit → Servlet → Master API → Response back to browser</p>
+
+<div class="steps">
+
+  <!-- STEP 1 -->
+  <div class="step s1">
+    <div class="line-col"><div class="step-num">1</div></div>
+    <div class="step-body">
+      <div class="step-title"><span class="badge badge-js">JS</span> User Clicks Submit — What gets built</div>
+      <div class="step-desc">
+        The browser collects two things: a JSON string (all demographic text data) and the actual image File objects. These are packed into one <strong>FormData</strong> object.
+      </div>
+      <div class="flow-row">
+        <div class="flow-box">
+          <div class="flow-box-title">📄 "json" text part</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> applicantId, firstName, lastName</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> dateOfBirth, gender, city...</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> group, operation, timestamp</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> biometrics metadata (filenames)</div>
+        </div>
+        <div class="flow-box">
+          <div class="flow-box-title">🖼️ Image file parts</div>
+          <div class="flow-item"><span class="dot dot-green"></span> faceFront → File object</div>
+          <div class="flow-item"><span class="dot dot-green"></span> faceLeft, faceRight</div>
+          <div class="flow-item"><span class="dot dot-green"></span> irisLeft, irisRight</div>
+          <div class="flow-item"><span class="dot dot-orange"></span> fp_left_thumb, fp_left_index...</div>
+          <div class="flow-item"><span class="dot dot-orange"></span> fp_right_thumb, fp_right_index...</div>
+        </div>
+      </div>
+<pre><span class="c">// JS: handleSubmit()</span>
+<span class="k">const</span> <span class="v">formData</span> = <span class="k">new</span> <span class="f">FormData</span>();
+
+<span class="c">// Part 1: JSON string — all text fields</span>
+<span class="v">formData</span>.<span class="f">append</span>(<span class="s">"json"</span>, <span class="f">JSON.stringify</span>(payload));
+
+<span class="c">// Part 2: Actual image files</span>
+<span class="v">formData</span>.<span class="f">append</span>(<span class="s">"faceFront"</span>,    state.face.front.file);   <span class="c">// File object</span>
+<span class="v">formData</span>.<span class="f">append</span>(<span class="s">"irisLeft"</span>,     state.iris.left.file);
+<span class="v">formData</span>.<span class="f">append</span>(<span class="s">"fp_left_thumb"</span>, state.fingerprints.left.thumb.file);
+<span class="c">// ... etc</span>
+
+<span class="c">// Send — NO Content-Type header, browser sets it automatically</span>
+<span class="f">fetch</span>(<span class="s">"enrollment"</span>, { <span class="n">method</span>: <span class="s">"POST"</span>, <span class="n">body</span>: formData });</pre>
+      <div class="tip">✅ Your current JS is already doing this correctly!</div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- STEP 2 -->
+  <div class="step s2">
+    <div class="line-col"><div class="step-num">2</div></div>
+    <div class="step-body">
+      <div class="step-title"><span class="badge badge-java">JAVA</span> Servlet receives the request</div>
+      <div class="step-desc">
+        Tomcat automatically splits the multipart body into individual parts. Your servlet reads the "json" part as text, and each image part as raw bytes.
+      </div>
+<pre><span class="c">// EnrollmentServlet.doPost()</span>
+
+<span class="c">// ── Read the JSON text ──────────────────────────</span>
+<span class="k">String</span> <span class="v">jsonStr</span> = request.<span class="f">getParameter</span>(<span class="s">"json"</span>);
+<span class="c">// → gives you the big JSON string</span>
+
+<span class="c">// ── Parse JSON into Applicant object ────────────</span>
+<span class="k">JsonNode</span> <span class="v">root</span> = objectMapper.<span class="f">readTree</span>(jsonStr);
+<span class="k">JsonNode</span> <span class="v">demo</span> = root.<span class="f">path</span>(<span class="s">"demographic"</span>);
+
+<span class="k">Applicant</span> <span class="v">applicant</span> = <span class="k">new</span> <span class="f">Applicant</span>();
+applicant.<span class="f">setFirstName</span>(demo.<span class="f">path</span>(<span class="s">"firstName"</span>).<span class="f">asText</span>());
+applicant.<span class="f">setLastName</span>(demo.<span class="f">path</span>(<span class="s">"lastName"</span>).<span class="f">asText</span>());
+<span class="c">// ... all other fields</span>
+
+<span class="c">// ── Read image files ─────────────────────────────</span>
+<span class="k">Part</span> <span class="v">facePart</span> = request.<span class="f">getPart</span>(<span class="s">"faceFront"</span>);
+<span class="k">byte</span>[] <span class="v">faceBytes</span> = facePart.<span class="f">getInputStream</span>().<span class="f">readAllBytes</span>();
+<span class="c">// faceBytes = raw PNG/JPG image data</span>
+
+<span class="c">// Convert to Base64 to store or send to API</span>
+<span class="k">String</span> <span class="v">base64</span> = Base64.<span class="f">getEncoder</span>().<span class="f">encodeToString</span>(faceBytes);</pre>
+      <div class="warn">⚠️ Servlet MUST have @MultipartConfig annotation or getPart() will throw an error!</div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- STEP 3 -->
+  <div class="step s3">
+    <div class="line-col"><div class="step-num">3</div></div>
+    <div class="step-body">
+      <div class="step-title"><span class="badge badge-json">JSON</span> What does the parsed data look like inside Java?</div>
+      <div class="step-desc">
+        After parsing, you have two Java objects: <strong>Applicant</strong> (text data) and <strong>BiometricData</strong> (images as Base64 strings).
+      </div>
+      <div class="flow-row">
+        <div class="flow-box">
+          <div class="flow-box-title">Applicant object</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> applicantId = "uuid..."</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> firstName = "John"</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> lastName = "Doe"</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> dateOfBirth = "1990-05-15"</div>
+          <div class="flow-item"><span class="dot dot-blue"></span> group = "default"</div>
+        </div>
+        <div class="flow-box">
+          <div class="flow-box-title">BiometricData object</div>
+          <div class="flow-item"><span class="dot dot-green"></span> faceFront.base64 = "iVBOR..."</div>
+          <div class="flow-item"><span class="dot dot-green"></span> faceFront.filename = "face.png"</div>
+          <div class="flow-item"><span class="dot dot-orange"></span> leftFingerprints["thumb"].base64</div>
+          <div class="flow-item"><span class="dot dot-purple"></span> leftIris.base64 = "iVBOR..."</div>
+        </div>
+      </div>
+<pre><span class="c">// BiometricData is filled like this:</span>
+<span class="k">BiometricData</span> <span class="v">biometrics</span> = <span class="k">new</span> <span class="f">BiometricData</span>();
+
+<span class="c">// For each image part → read bytes → Base64 → CaptureSlot</span>
+<span class="k">Part</span> <span class="v">part</span>      = request.<span class="f">getPart</span>(<span class="s">"faceFront"</span>);
+<span class="k">byte</span>[] <span class="v">bytes</span>  = part.<span class="f">getInputStream</span>().<span class="f">readAllBytes</span>();
+<span class="k">String</span> <span class="v">b64</span>    = Base64.<span class="f">getEncoder</span>().<span class="f">encodeToString</span>(bytes);
+
+biometrics.<span class="f">setFaceFront</span>(<span class="k">new</span> CaptureSlot(b64, <span class="s">"face.png"</span>, <span class="s">"0.3MB"</span>, <span class="s">"PNG"</span>));
+
+<span class="c">// Fingerprints (loop all 10)</span>
+<span class="k">for</span> (<span class="k">String</span> finger : fingers) {
+    <span class="k">Part</span> <span class="v">p</span> = request.<span class="f">getPart</span>(<span class="s">"fp_left_"</span> + finger);
+    <span class="k">if</span> (p != <span class="k">null</span> && p.<span class="f">getSize</span>() > <span class="n">0</span>) {
+        biometrics.<span class="f">getLeftFingerprints</span>().<span class="f">put</span>(finger, <span class="f">readPart</span>(p));
+    }
+}</pre>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- STEP 4 -->
+  <div class="step s4">
+    <div class="line-col"><div class="step-num">4</div></div>
+    <div class="step-body">
+      <div class="step-title"><span class="badge badge-api">API</span> Servlet sends to Master API (future step)</div>
+      <div class="step-desc">
+        You build a JSON body and POST it to the Master ABIS API using Java's HttpClient. The images go as Base64 strings inside the JSON.
+      </div>
+<pre><span class="c">// EnrollmentService.processEnrollment()</span>
+<span class="c">// Build the JSON body for the Master API</span>
+
+<span class="k">Map</span>&lt;<span class="k">String</span>, <span class="k">Object</span>&gt; <span class="v">apiBody</span> = <span class="k">new</span> <span class="f">HashMap</span>&lt;&gt;();
+apiBody.<span class="f">put</span>(<span class="s">"applicantId"</span>,  applicant.<span class="f">getApplicantId</span>());
+apiBody.<span class="f">put</span>(<span class="s">"firstName"</span>,    applicant.<span class="f">getFirstName</span>());
+apiBody.<span class="f">put</span>(<span class="s">"dateOfBirth"</span>,  applicant.<span class="f">getDateOfBirth</span>());
+apiBody.<span class="f">put</span>(<span class="s">"group"</span>,        applicant.<span class="f">getGroup</span>());
+
+<span class="c">// Attach biometrics as Base64</span>
+<span class="k">Map</span>&lt;<span class="k">String</span>, <span class="k">String</span>&gt; <span class="v">face</span> = <span class="k">new</span> <span class="f">HashMap</span>&lt;&gt;();
+face.<span class="f">put</span>(<span class="s">"front"</span>, biometrics.<span class="f">getFaceFront</span>().<span class="f">getBase64Data</span>());
+apiBody.<span class="f">put</span>(<span class="s">"face"</span>, face);
+
+<span class="k">String</span> <span class="v">jsonBody</span> = objectMapper.<span class="f">writeValueAsString</span>(apiBody);
+
+<span class="c">// Send to Master API via HttpClient</span>
+<span class="k">HttpClient</span> <span class="v">client</span>   = HttpClient.<span class="f">newHttpClient</span>();
+<span class="k">HttpRequest</span> <span class="v">request</span> = HttpRequest.<span class="f">newBuilder</span>()
+    .<span class="f">uri</span>(URI.<span class="f">create</span>(<span class="s">"https://master-api.example.com/enroll"</span>))
+    .<span class="f">header</span>(<span class="s">"Content-Type"</span>, <span class="s">"application/json"</span>)
+    .<span class="f">POST</span>(HttpRequest.BodyPublishers.<span class="f">ofString</span>(jsonBody))
+    .<span class="f">build</span>();
+
+<span class="k">HttpResponse</span>&lt;<span class="k">String</span>&gt; <span class="v">apiResp</span> = client.<span class="f">send</span>(request,
+    HttpResponse.BodyHandlers.<span class="f">ofString</span>());</pre>
+      <div class="tip">✅ Base64 is the standard way to send images inside JSON to REST APIs.</div>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- STEP 5 -->
+  <div class="step s5">
+    <div class="line-col"><div class="step-num">5</div></div>
+    <div class="step-body">
+      <div class="step-title"><span class="badge badge-java">JAVA</span> Servlet reads Master API response → sends back to browser</div>
+      <div class="step-desc">
+        The Master API returns a JSON response. Your servlet reads it, then writes its own JSON response back to the browser.
+      </div>
+<pre><span class="c">// Read what Master API replied</span>
+<span class="k">String</span> <span class="v">apiResponseBody</span> = apiResp.<span class="f">body</span>();
+<span class="k">int</span>    <span class="v">apiStatus</span>       = apiResp.<span class="f">statusCode</span>();  <span class="c">// 200, 400, 500...</span>
+
+<span class="k">if</span> (apiStatus == <span class="n">200</span>) {
+    <span class="c">// Parse the API response</span>
+    <span class="k">JsonNode</span> <span class="v">apiJson</span>   = objectMapper.<span class="f">readTree</span>(apiResponseBody);
+    <span class="k">String</span>   <span class="v">refId</span>     = apiJson.<span class="f">path</span>(<span class="s">"referenceId"</span>).<span class="f">asText</span>();
+
+    <span class="c">// Send success back to browser</span>
+    response.<span class="f">setContentType</span>(<span class="s">"application/json"</span>);
+    response.<span class="f">getWriter</span>().<span class="f">write</span>(
+        <span class="s">"{"</span> +
+        <span class="s">"\"status\":\"success\","</span> +
+        <span class="s">"\"referenceId\":\""</span> + refId + <span class="s">"\""</span> +
+        <span class="s">"}"</span>
+    );
+} <span class="k">else</span> {
+    <span class="c">// Send error back to browser</span>
+    response.<span class="f">setStatus</span>(<span class="n">400</span>);
+    response.<span class="f">getWriter</span>().<span class="f">write</span>(<span class="s">"{\"status\":\"error\",\"message\":\"API rejected\"}"</span>);
+}</pre>
+    </div>
+  </div>
+
+  <div class="arrow">↓</div>
+
+  <!-- STEP 6 -->
+  <div class="step s6">
+    <div class="line-col"><div class="step-num">6</div></div>
+    <div class="step-body">
+      <div class="step-title"><span class="badge badge-js">JS</span> Browser receives response → shows result to user</div>
+      <div class="step-desc">
+        The fetch() .then() handler reads the JSON response from your servlet and shows a success or error message.
+      </div>
+<pre><span class="c">// JS: after fetch()</span>
+.<span class="f">then</span>(res => res.<span class="f">json</span>())
+.<span class="f">then</span>(data => {
+    <span class="k">if</span> (data.status === <span class="s">"success"</span>) {
+        <span class="f">showToast</span>(<span class="s">"Enrolled! Ref ID: "</span> + data.referenceId);
+    } <span class="k">else</span> {
+        <span class="f">showToast</span>(data.message, <span class="k">true</span>);  <span class="c">// true = error (red)</span>
+    }
+})
+.<span class="f">catch</span>(err => {
+    <span class="f">showToast</span>(<span class="s">"Network error"</span>, <span class="k">true</span>);
+});</pre>
+      <div class="tip">✅ The browser never refreshes. Everything happens via fetch (AJAX).</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SUMMARY BOX -->
+<div style="max-width:860px;margin:32px auto 0;background:#0f172a;border:1px solid #1e3a5f;border-radius:12px;padding:24px;">
+  <div style="color:#60a5fa;font-weight:bold;font-size:14px;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;">📦 Complete Request Format Summary</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div>
+      <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">What browser sends (POST body)</div>
+<pre style="margin:0;font-size:11px;">Content-Type: multipart/form-data
+
+<span class="ok">Part: "json"</span>          ← text, the big JSON
+<span class="ok">Part: "faceFront"</span>     ← image file
+<span class="ok">Part: "faceLeft"</span>      ← image file
+<span class="ok">Part: "faceRight"</span>     ← image file
+<span class="ok">Part: "irisLeft"</span>      ← image file
+<span class="ok">Part: "irisRight"</span>     ← image file
+<span class="ok">Part: "fp_left_thumb"</span> ← image file
+<span class="ok">Part: "fp_left_index"</span> ← image file
+... (only uploaded ones)</pre>
+    </div>
+    <div>
+      <div style="color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">What servlet reads</div>
+<pre style="margin:0;font-size:11px;"><span class="w">// Text part:</span>
+request.getParameter("json")
+
+<span class="w">// File parts:</span>
+request.getPart("faceFront")
+request.getPart("irisLeft")
+request.getPart("fp_left_thumb")
+
+<span class="w">// Convert file → Base64:</span>
+byte[] b = part.getInputStream()
+              .readAllBytes();
+Base64.getEncoder()
+      .encodeToString(b);</pre>
+    </div>
+  </div>
+  <hr style="border-color:#1e293b;margin:16px 0;">
+  <div style="color:#64748b;font-size:11px;">
+    <span style="color:#4ade80;">✅ Your JS handleSubmit is correct</span> &nbsp;|&nbsp;
+    <span style="color:#fb923c;">⚠️ Servlet needs @MultipartConfig + getPart() fixes</span> &nbsp;|&nbsp;
+    <span style="color:#60a5fa;">🔵 Master API call goes inside EnrollmentService.processEnrollment()</span>
+  </div>
+</div>
+
+</body>
+</html>
